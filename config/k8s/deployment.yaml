@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exam-app
+  namespace: exam-david-karacsony
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exam-app
+  template:
+    metadata:
+      labels:
+        app: exam-app
+    spec:
+      initContainers:
+        - name: prepare-storage
+          image: busybox
+          command: ["sh", "-c", "mkdir -p /app/logs && touch /app/logs/requests.log && chmod -R 777 /app"]
+          volumeMounts:
+            - name: exam-storage
+              mountPath: /app
+      containers:
+        - name: exam-app-container
+          image: dawekka/exam-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: exam-app-config
+          volumeMounts:
+            - name: exam-storage
+              mountPath: /app
+      volumes:
+        - name: exam-storage
+          persistentVolumeClaim:
+            claimName: exam-app-pvc
